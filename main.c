@@ -22,10 +22,67 @@ enum err_t {
     EFLG,
 };
 
-enum args_name {
-    path = 1,
-    flags,
-};
+void throw_error(enum err_t err);
+FILE *open_file(const char *path, const char *mode); 
+void calc(FILE *f);
+void print_help(); 
+bool parse_flags(const char *flags);
+
+int main(int argc, char *argv[]) {
+    int i = 1, j;
+    bool is_was_flg = false;
+
+    if (argc < 2) {
+        throw_error(FEWARGC);
+        exit(1);
+    } 
+    for (j = i; j < argc-1; ++j) {
+        is_was_flg = parse_flags(argv[i]);
+        if (results.is_p_help) {
+            print_help();
+            return 0;
+        }
+    }
+
+    if (is_was_flg) {
+        i = j-1;
+    }
+    
+    
+    unsigned long long sum_lc, sum_wc, sum_cc;
+    sum_lc = sum_wc = sum_cc = 0;
+    while (i < argc) {
+        FILE *f = open_file(argv[i], "r");
+    
+        calc(f);
+
+        sum_lc += results.lc;
+        sum_wc += results.wc;
+        sum_cc += results.cc;
+
+        fclose(f);
+
+        if (results.is_p_line)
+            printf("%llu ", results.lc);
+        if (results.is_p_word)
+            printf("%llu ", results.wc);
+        if (results.is_p_character)
+            printf("%llu ", results.cc);
+        printf("%s\n", argv[i]);
+        ++i;
+    }
+
+    if (results.is_p_line)
+        printf("%llu ", sum_lc);
+    if (results.is_p_word)
+        printf("%llu ", sum_wc);
+    if (results.is_p_character)
+        printf("%llu ", sum_cc);
+    printf("Total\n");
+
+    return 0;
+}
+
 
 void throw_error(enum err_t err) {
     if (err == FEWARGC)
@@ -66,16 +123,19 @@ void calc(FILE *f) {
 
 void print_help() {
     printf("Type wmc <path to file> for to run with default settings\n");
-    printf("Type wmc <path to file> <flags> for to run with custom settings\n");
+    printf("Type wmc <flags> <path to file> for to run with custom settings\n");
     printf("Possible flags: \n\t'-l' - to count the rows\n\t'-w' - to count the words\n\t'-c' - to count the characters\n\t'-h' - to print help\n");
 }
 
-void parse_flags(const char *flags) {
+bool parse_flags(const char *flags) {
     size_t len = strlen(flags);
     if (flags[0] != '-' || len < 2) {
-        throw_error(EFLG);
-        exit(1);
+        results.is_p_line = results.is_p_word = results.is_p_character = true;
+        results.is_p_help = false;
+        return false;
     }
+
+    results.is_p_help = results.is_p_line = results.is_p_word = results.is_p_character = false;
     for (size_t i = 1; i < len; ++i) {
         if (flags[i] == 'h') {
             results.is_p_help = true;
@@ -92,40 +152,5 @@ void parse_flags(const char *flags) {
             exit(1);
         }
     }
-}
-
-
-int main(int argc, char *argv[]) {
-
-    if (argc < 2) {
-        throw_error(FEWARGC);
-        exit(1);
-    } else if (argc > 2) {
-        results.is_p_help = results.is_p_line = results.is_p_word = results.is_p_character = false;
-        for (int i = flags; i < flags+argc-2; ++i) {
-            parse_flags(argv[i]);
-            if (results.is_p_help) {
-                print_help();
-                return 0;
-            }
-        }
-    } else {
-        results.is_p_line = results.is_p_word = results.is_p_character = true;
-    }
-
-    FILE *f = open_file(argv[path], "r");
-    
-    calc(f);
-
-    fclose(f);
-
-    if (results.is_p_line)
-        printf("%llu ", results.lc);
-    if (results.is_p_word)
-        printf("%llu ", results.wc);
-    if (results.is_p_character)
-        printf("%llu ", results.cc);
-    printf("%s\n", argv[path]);
-
-    return 0;
+    return true;
 }

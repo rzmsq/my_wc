@@ -1,0 +1,85 @@
+    return sysconf(_SC_LINE_MAX);
+}
+
+void calc(FILE *f) {
+    lc = wc = cc = 0;
+    
+    const long max_len_line = get_max_len_line();
+
+    char buff[max_len_line];
+    while (fgets(buff, sizeof(buff), f)) {
+        bool is_in_word = false;
+        lc++;
+        cc++;
+        for (int i = 0; i < max_len_line && buff[i] != '\n'; ++i) {
+            cc++;
+            if (buff[i] != ' ' && !is_in_word) {
+                wc++;
+                is_in_word = true;
+            }
+            else if (buff[i] == ' ' && is_in_word)
+                is_in_word = false;
+        }
+    }
+}
+
+void print_help() {
+    printf("Type wmc <path to file> for to run with default settings\n");
+    printf("Type wmc <path to file> <flags> for to run with custom settings\n");
+    printf("Possible flags: \n\t'-l' - To count the rows\n\t'w' - to count the words\n\t'-c' - to count the characters\n");
+}
+
+void parse_flags(const char *flags) {
+    size_t len = strlen(flags);
+    if (flags[0] != '-' || len < 2) {
+        throw_error(EFLG);
+        exit(1);
+    }
+    is_p_word = false;
+    is_p_line = false;
+    is_p_character = false;
+    for (size_t i = 1; i < len; ++i) {
+        if (flags[i] == 'h') {
+            print_help();
+            exit(0);
+        }
+        else if (flags[i] == 'w') {
+            is_p_word = true;
+        } else if (flags[i] == 'l') {
+            is_p_line = true;
+        } else if (flags[i] == 'c') {
+            is_p_character = true;
+        } else {
+            throw_error(EFLG);
+            exit(1);
+        }
+    }
+}
+
+
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        throw_error(FEWARGC);
+        exit(1);
+    } else if (argc > 2) {
+        parse_flags(argv[flags]);
+    } 
+
+    FILE *f = open_file(argv[path], "r");
+    
+    calc(f);
+
+    fclose(f);
+
+    if (is_p_line)
+        printf("%llu ", lc);
+    if (is_p_word)
+        printf("%llu ", wc);
+    if (is_p_character)
+        printf("%llu ", cc);
+    printf("%s\n", argv[path]);
+
+    return 0;
+}
+```
